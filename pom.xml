@@ -10,7 +10,7 @@
 
     <name>Captcha Spring Boot Starter</name>
     <description>Spring Boot auto-configuration for server-side captcha token verification (hCaptcha, mCaptcha).</description>
-    <url>https://github.com/moser-systems/captcha-java</url>
+    <url>https://github.com/moser-systems/captcha-spring-boot-starter</url>
 
     <licenses>
         <license>
@@ -30,9 +30,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/moser-systems/captcha-java.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/moser-systems/captcha-java.git</developerConnection>
-        <url>https://github.com/moser-systems/captcha-java</url>
+        <connection>scm:git:https://github.com/moser-systems/captcha-spring-boot-starter.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/moser-systems/captcha-spring-boot-starter.git</developerConnection>
+        <url>https://github.com/moser-systems/captcha-spring-boot-starter</url>
         <tag>HEAD</tag>
     </scm>
 
