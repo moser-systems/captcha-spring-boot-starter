@@ -1,5 +1,9 @@
-package com.mosersystems.hcaptcha;
+package com.mosersystems.captcha.hcaptcha;
 
+import com.mosersystems.captcha.CaptchaProperties;
+import com.mosersystems.captcha.CaptchaProvider;
+import com.mosersystems.captcha.CaptchaVerificationException;
+import com.mosersystems.captcha.CaptchaVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -10,47 +14,47 @@ import org.springframework.web.client.RestClient;
 /**
  * Verifies hCaptcha tokens against the hCaptcha siteverify endpoint.
  */
-public class HCaptchaVerifier {
+public class HCaptchaVerifier implements CaptchaVerifier {
+
+    /** Form parameter the hCaptcha widget submits the token in. */
+    public static final String TOKEN_PARAMETER = "h-captcha-response";
 
     private static final Logger log = LoggerFactory.getLogger(HCaptchaVerifier.class);
 
-    private final HCaptchaProperties properties;
+    private final CaptchaProperties.HCaptcha properties;
     private final RestClient restClient;
 
     /**
      * @param properties hCaptcha configuration
      * @param restClient client used to call the siteverify endpoint
      */
-    public HCaptchaVerifier(HCaptchaProperties properties, RestClient restClient) {
+    public HCaptchaVerifier(CaptchaProperties.HCaptcha properties, RestClient restClient) {
         this.properties = properties;
         this.restClient = restClient;
     }
 
-    /**
-     * Verifies a token, e.g. the {@code h-captcha-response} form parameter.
-     *
-     * @param captchaToken token submitted by the client
-     * @return the successful verification response
-     * @throws HCaptchaVerificationException if the token is missing or invalid, or verification failed
-     */
-    public HCaptchaVerificationResponse verify(String captchaToken) {
-        return verify(captchaToken, null);
+    @Override
+    public CaptchaProvider provider() {
+        return CaptchaProvider.HCAPTCHA;
     }
 
-    /**
-     * Verifies a token and passes the client's IP address to hCaptcha as an additional signal.
-     *
-     * @param captchaToken token submitted by the client
-     * @param remoteIp     IP address of the client, may be {@code null}
-     * @return the successful verification response
-     * @throws HCaptchaVerificationException if the token is missing or invalid, or verification failed
-     */
-    public HCaptchaVerificationResponse verify(String captchaToken, String remoteIp) {
+    @Override
+    public String siteKey() {
+        return properties.siteKey();
+    }
+
+    @Override
+    public String tokenParameterName() {
+        return TOKEN_PARAMETER;
+    }
+
+    @Override
+    public void verify(String captchaToken, String remoteIp) {
         if (captchaToken == null || captchaToken.isBlank()) {
-            throw new HCaptchaVerificationException("Captcha token is missing");
+            throw new CaptchaVerificationException("Captcha token is missing");
         }
-        if (properties.secret() == null || properties.secret().isBlank()) {
-            throw new HCaptchaVerificationException("hcaptcha.secret is not configured");
+        if (!hasText(properties.secret())) {
+            throw new CaptchaVerificationException("captcha.hcaptcha.secret is not configured");
         }
 
         HCaptchaVerificationResponse response;
@@ -73,17 +77,16 @@ public class HCaptchaVerifier {
                     .body(HCaptchaVerificationResponse.class);
         } catch (Exception e) {
             log.error("Error during captcha verification", e);
-            throw new HCaptchaVerificationException("Error during captcha verification: " + e.getMessage(), e);
+            throw new CaptchaVerificationException("Error during captcha verification: " + e.getMessage(), e);
         }
 
         validateResponse(response);
         log.debug("Captcha verification successful");
-        return response;
     }
 
     private void validateResponse(HCaptchaVerificationResponse response) {
         if (response == null) {
-            throw new HCaptchaVerificationException("Captcha service returned null response");
+            throw new CaptchaVerificationException("Captcha service returned null response");
         }
 
         if (!Boolean.TRUE.equals(response.success())) {
@@ -92,7 +95,7 @@ public class HCaptchaVerifier {
                 errorMessage += ": " + String.join(", ", response.errorCodes());
                 log.warn("Captcha verification failed with error codes: {}", response.errorCodes());
             }
-            throw new HCaptchaVerificationException(errorMessage);
+            throw new CaptchaVerificationException(errorMessage);
         }
 
         if (hasText(properties.hostname())) {
@@ -102,13 +105,13 @@ public class HCaptchaVerifier {
 
     private void validateHostname(String responseHostname) {
         if (!hasText(responseHostname)) {
-            throw new HCaptchaVerificationException("Captcha response missing hostname");
+            throw new CaptchaVerificationException("Captcha response missing hostname");
         }
 
         String expectedHostname = properties.hostname();
         if (!responseHostname.equals(expectedHostname)) {
             log.warn("Hostname mismatch: expected '{}', got '{}'", expectedHostname, responseHostname);
-            throw new HCaptchaVerificationException(
+            throw new CaptchaVerificationException(
                     String.format("Hostname mismatch: expected '%s', got '%s'", expectedHostname, responseHostname)
             );
         }

@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.moser-systems</groupId>
-    <artifactId>hcaptcha-spring-boot-starter</artifactId>
+    <artifactId>captcha-spring-boot-starter</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>hCaptcha Spring Boot Starter</name>
-    <description>Spring Boot auto-configuration for server-side hCaptcha token verification.</description>
-    <url>https://github.com/moser-systems/hcaptcha-java</url>
+    <name>Captcha Spring Boot Starter</name>
+    <description>Spring Boot auto-configuration for server-side captcha token verification (hCaptcha, mCaptcha).</description>
+    <url>https://github.com/moser-systems/captcha-java</url>
 
     <licenses>
         <license>
@@ -30,9 +30,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/moser-systems/hcaptcha-java.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/moser-systems/hcaptcha-java.git</developerConnection>
-        <url>https://github.com/moser-systems/hcaptcha-java</url>
+        <connection>scm:git:https://github.com/moser-systems/captcha-java.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/moser-systems/captcha-java.git</developerConnection>
+        <url>https://github.com/moser-systems/captcha-java</url>
         <tag>HEAD</tag>
     </scm>
 

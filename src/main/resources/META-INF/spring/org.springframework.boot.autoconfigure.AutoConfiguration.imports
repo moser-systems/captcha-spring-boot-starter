@@ -1,1 +1,1 @@
-com.mosersystems.hcaptcha.autoconfigure.HCaptchaAutoConfiguration
+com.mosersystems.captcha.autoconfigure.CaptchaAutoConfiguration

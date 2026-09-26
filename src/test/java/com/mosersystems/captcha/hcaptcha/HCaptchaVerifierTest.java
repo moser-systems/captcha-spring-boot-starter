@@ -1,4 +1,7 @@
-package com.mosersystems.hcaptcha;
+package com.mosersystems.captcha.hcaptcha;
+
+import com.mosersystems.captcha.CaptchaProperties;
+import com.mosersystems.captcha.CaptchaVerificationException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,6 +12,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -28,7 +33,7 @@ class HCaptchaVerifierTest {
     private HCaptchaVerifier verifier(String siteKey, String hostname) {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        return new HCaptchaVerifier(new HCaptchaProperties(true, siteKey, SECRET, ENDPOINT, hostname), builder.build());
+        return new HCaptchaVerifier(new CaptchaProperties.HCaptcha(siteKey, SECRET, ENDPOINT, hostname), builder.build());
     }
 
     private HCaptchaVerifier verifier() {
@@ -42,12 +47,10 @@ class HCaptchaVerifierTest {
         server.expect(requestTo(ENDPOINT))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_FORM_URLENCODED))
-                .andExpect(content().formDataContains(java.util.Map.of("secret", SECRET, "response", "valid-token")))
+                .andExpect(content().formDataContains(Map.of("secret", SECRET, "response", "valid-token")))
                 .andRespond(withSuccess("{\"success\":true}", MediaType.APPLICATION_JSON));
 
-        HCaptchaVerificationResponse response = verifier.verify("valid-token");
-
-        assertTrue(response.success());
+        assertDoesNotThrow(() -> verifier.verify("valid-token"));
         server.verify();
     }
 
@@ -56,7 +59,7 @@ class HCaptchaVerifierTest {
     void testSiteKeyAndRemoteIp() {
         HCaptchaVerifier verifier = verifier("site-key", null);
         server.expect(requestTo(ENDPOINT))
-                .andExpect(content().formDataContains(java.util.Map.of("sitekey", "site-key", "remoteip", "192.0.2.1")))
+                .andExpect(content().formDataContains(Map.of("sitekey", "site-key", "remoteip", "192.0.2.1")))
                 .andRespond(withSuccess("{\"success\":true}", MediaType.APPLICATION_JSON));
 
         assertDoesNotThrow(() -> verifier.verify("valid-token", "192.0.2.1"));
@@ -70,7 +73,7 @@ class HCaptchaVerifierTest {
         server.expect(requestTo(ENDPOINT))
                 .andRespond(withSuccess("{\"success\":false}", MediaType.APPLICATION_JSON));
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify("invalid-token"));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify("invalid-token"));
     }
 
     @Test
@@ -82,7 +85,7 @@ class HCaptchaVerifierTest {
                         "{\"success\":false,\"error-codes\":[\"invalid-input-response\",\"timeout-or-duplicate\"]}",
                         MediaType.APPLICATION_JSON));
 
-        HCaptchaVerificationException exception = assertThrows(HCaptchaVerificationException.class,
+        CaptchaVerificationException exception = assertThrows(CaptchaVerificationException.class,
                 () -> verifier.verify("invalid-token"));
 
         assertTrue(exception.getMessage().contains("invalid-input-response"),
@@ -98,10 +101,7 @@ class HCaptchaVerifierTest {
                         "{\"success\":true,\"challenge_ts\":\"2026-09-26T10:00:00Z\",\"hostname\":\"example.com\",\"credit\":false}",
                         MediaType.APPLICATION_JSON));
 
-        HCaptchaVerificationResponse response = verifier.verify("valid-token");
-
-        assertEquals("example.com", response.hostname());
-        assertNotNull(response.challengeTimestamp());
+        assertDoesNotThrow(() -> verifier.verify("valid-token"));
     }
 
     @Test
@@ -111,7 +111,7 @@ class HCaptchaVerifierTest {
         server.expect(requestTo(ENDPOINT))
                 .andRespond(withSuccess("{\"success\":true,\"hostname\":\"attacker.com\"}", MediaType.APPLICATION_JSON));
 
-        HCaptchaVerificationException exception = assertThrows(HCaptchaVerificationException.class,
+        CaptchaVerificationException exception = assertThrows(CaptchaVerificationException.class,
                 () -> verifier.verify("valid-token"));
 
         assertTrue(exception.getMessage().contains("Hostname mismatch"),
@@ -125,7 +125,7 @@ class HCaptchaVerifierTest {
         server.expect(requestTo(ENDPOINT))
                 .andRespond(withSuccess("{\"success\":true}", MediaType.APPLICATION_JSON));
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify("valid-token"));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify("valid-token"));
     }
 
     @ParameterizedTest
@@ -135,16 +135,16 @@ class HCaptchaVerifierTest {
     void testEmptyToken(String token) {
         HCaptchaVerifier verifier = verifier();
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify(token));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify(token));
     }
 
     @Test
     @DisplayName("Should throw exception when secret is not configured")
     void testMissingSecret() {
         HCaptchaVerifier verifier = new HCaptchaVerifier(
-                new HCaptchaProperties(true, null, null, ENDPOINT, null), RestClient.create());
+                new CaptchaProperties.HCaptcha(null, null, ENDPOINT, null), RestClient.create());
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify("valid-token"));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify("valid-token"));
     }
 
     @Test
@@ -153,7 +153,7 @@ class HCaptchaVerifierTest {
         HCaptchaVerifier verifier = verifier();
         server.expect(requestTo(ENDPOINT)).andRespond(withSuccess());
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify("valid-token"));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify("valid-token"));
     }
 
     @Test
@@ -162,6 +162,6 @@ class HCaptchaVerifierTest {
         HCaptchaVerifier verifier = verifier();
         server.expect(requestTo(ENDPOINT)).andRespond(withServerError());
 
-        assertThrows(HCaptchaVerificationException.class, () -> verifier.verify("valid-token"));
+        assertThrows(CaptchaVerificationException.class, () -> verifier.verify("valid-token"));
     }
 }

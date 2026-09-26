@@ -1,4 +1,4 @@
-package com.mosersystems.hcaptcha;
+package com.mosersystems.captcha.hcaptcha;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
